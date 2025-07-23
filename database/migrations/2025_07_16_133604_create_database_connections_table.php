@@ -12,9 +12,15 @@ return new class extends Migration
     public function up(): void
     {
         Schema::create('database_connections', function (Blueprint $table) {
-            $table->id();
-            $table->timestamps();
-        });
+        $table->id();
+        $table->foreignId('user_id')->constrained()->onDelete('cascade'); // lien avec l’admin qui a ajouté la BDD
+        $table->enum('type', ['mysql', 'pgsql']);
+        $table->string('host');
+        $table->string('dbname');
+        $table->string('username');
+        $table->string('password');
+        $table->timestamps();
+    });
     }
 
     /**

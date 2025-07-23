@@ -15,6 +15,13 @@
                     <x-nav-link :href="route('dashboard')" :active="request()->routeIs('dashboard')">
                         {{ __('Dashboard') }}
                     </x-nav-link>
+
+                    
+                @if(auth()->user()->role === 'admin')
+                    <x-nav-link :href="route('admin.dashboard')" :active="request()->routeIs('admin.dashboard')">
+                        🛠 Admin
+                    </x-nav-link>
+                @endif
                 </div>
             </div>
 
@@ -49,6 +56,8 @@
                             </x-dropdown-link>
                         </form>
                     </x-slot>
+                
+
                 </x-dropdown>
             </div>
 

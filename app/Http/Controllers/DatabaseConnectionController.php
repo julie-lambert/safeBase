@@ -4,62 +4,66 @@ namespace App\Http\Controllers;
 
 use App\Models\DatabaseConnection;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Auth;
 
 class DatabaseConnectionController extends Controller
 {
-    /**
-     * Display a listing of the resource.
-     */
     public function index()
     {
-        //
+        $databases = DatabaseConnection::all();
+        return view('databases.index', compact('databases'));
     }
 
-    /**
-     * Show the form for creating a new resource.
-     */
     public function create()
     {
-        //
+        return view('databases.create');
     }
 
-    /**
-     * Store a newly created resource in storage.
-     */
     public function store(Request $request)
     {
-        //
+        $request->validate([
+            'type' => 'required|in:mysql,pgsql',
+            'host' => 'required|string',
+            'dbname' => 'required|string',
+            'username' => 'required|string',
+            'password' => 'nullable|string',
+        ]);
+
+        DatabaseConnection::create([
+            'user_id' => Auth::id(),
+            'type' => $request->type,
+            'host' => $request->host,
+            'dbname' => $request->dbname,
+            'username' => $request->username,
+            'password' => $request->password ?? '',
+        ]);
+
+        return redirect()->route('databases.index')->with('success', 'Connexion ajoutée !');
     }
 
-    /**
-     * Display the specified resource.
-     */
-    public function show(DatabaseConnection $databaseConnection)
+    public function edit(DatabaseConnection $database)
     {
-        //
+        return view('databases.edit', compact('database'));
     }
 
-    /**
-     * Show the form for editing the specified resource.
-     */
-    public function edit(DatabaseConnection $databaseConnection)
+    public function update(Request $request, DatabaseConnection $database)
     {
-        //
+        $request->validate([
+            'type' => 'required|in:mysql,pgsql',
+            'host' => 'required|string',
+            'dbname' => 'required|string',
+            'username' => 'required|string',
+            'password' => 'required|string',
+        ]);
+
+        $database->update($request->all());
+
+        return redirect()->route('databases.index')->with('success', 'Connexion mise à jour !');
     }
 
-    /**
-     * Update the specified resource in storage.
-     */
-    public function update(Request $request, DatabaseConnection $databaseConnection)
+    public function destroy(DatabaseConnection $database)
     {
-        //
-    }
-
-    /**
-     * Remove the specified resource from storage.
-     */
-    public function destroy(DatabaseConnection $databaseConnection)
-    {
-        //
+        $database->delete();
+        return redirect()->route('databases.index')->with('success', 'Connexion supprimée !');
     }
 }
