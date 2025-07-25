@@ -28,7 +28,19 @@ jobs:
       - name: Install Composer dependencies
         run: composer install --no-interaction --prefer-dist --optimize-autoloader
 
-      # 3. Lancer les tests Laravel
+      # 3. Préparer un .env minimal pour les tests
+      - name: Prepare Laravel .env
+        run: |
+          cp .env.example .env
+          # For CI we use SQLite in memory to avoid needing MySQL
+          echo "DB_CONNECTION=sqlite" >> .env
+          echo "DB_DATABASE=:memory:" >> .env
+
+      # 4. Générer une clé d'application
+      - name: Generate app key
+        run: php artisan key:generate
+
+      # 5. Lancer les tests Laravel
       - name: Run Laravel tests
         run: php artisan test
 
