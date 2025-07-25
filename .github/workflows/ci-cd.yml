@@ -28,19 +28,26 @@ jobs:
       - name: Install Composer dependencies
         run: composer install --no-interaction --prefer-dist --optimize-autoloader
 
-      # 3. Préparer un .env minimal pour les tests
-      - name: Prepare Laravel .env
+      # 3. Préparer un .env minimal pour CI
+      - name: Prepare Laravel .env for CI
         run: |
           cp .env.example .env
-          # For CI we use SQLite in memory to avoid needing MySQL
           echo "DB_CONNECTION=sqlite" >> .env
           echo "DB_DATABASE=:memory:" >> .env
 
-      # 4. Générer une clé d'application
-      - name: Generate app key
-        run: php artisan key:generate
+      # 4. Vérifier que le .env est bien créé
+      - name: Debug .env
+        run: cat .env
 
-      # 5. Lancer les tests Laravel
+      # 5. Générer une clé d'application
+      - name: Generate app key
+        run: php artisan key:generate --force
+
+      # 6. Vérifier que la clé est bien générée
+      - name: Check APP_KEY
+        run: grep APP_KEY .env || echo "No APP_KEY found!"
+
+      # 7. Lancer les tests Laravel
       - name: Run Laravel tests
         run: php artisan test
 
@@ -49,11 +56,9 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-      # 1. Checkout du code
       - name: Checkout code
         uses: actions/checkout@v4
 
-      # 2. Connexion à GHCR
       - name: Log in to GitHub Container Registry
         uses: docker/login-action@v2
         with:
@@ -61,11 +66,9 @@ jobs:
           username: ${{ github.actor }}
           password: ${{ secrets.GHCR_PAT }}
 
-      # 3. Construire l'image Docker
       - name: Build Docker image
         run: |
           docker build -t ghcr.io/${{ github.repository_owner }}/$IMAGE_NAME:latest .
 
-      # 4. Pousser l'image sur GHCR
       - name: Push Docker image
         run: docker push ghcr.io/${{ github.repository_owner }}/$IMAGE_NAME:latest
