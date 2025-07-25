@@ -1,22 +1,31 @@
+# ✅ Étape 1 : Base PHP avec extensions nécessaires
 FROM php:8.2-cli
 
-# ✅ Mettre à jour les paquets système
-RUN apt-get update && apt-get upgrade -y && apt-get clean
+# ✅ Installer les extensions PHP nécessaires à Laravel
+RUN apt-get update && apt-get install -y \
+    unzip git libzip-dev libpng-dev libonig-dev libxml2-dev \
+    && docker-php-ext-install pdo_mysql zip bcmath
 
-# ✅ Installer extensions PHP requises
-RUN docker-php-ext-install pdo pdo_mysql
-
-# ✅ Installer Composer
+# ✅ Installer Composer globalement
 COPY --from=composer:2 /usr/bin/composer /usr/bin/composer
 
-# ✅ Dossier de travail
+# ✅ Définir le dossier de travail
 WORKDIR /var/www/html
 
-# ✅ Copier projet
+# ✅ Copier uniquement composer.json & composer.lock d’abord (cache build)
+COPY composer.json composer.lock ./
+
+# ✅ Installer dépendances PHP (sans scripts pour gagner du temps)
+RUN composer install --no-interaction --prefer-dist --no-scripts --no-dev
+
+# ✅ Copier le reste du projet
 COPY . .
 
-# ✅ Installer dépendances Laravel
+# ✅ Lancer une 2ème installation complète (pour autoload et scripts artisan)
 RUN composer install --no-interaction --prefer-dist --optimize-autoloader
 
-# ✅ Donner les droits
+# ✅ Donner les droits pour Laravel
 RUN chmod -R 777 storage bootstrap/cache
+
+# ✅ Commande par défaut : lancer Laravel
+CMD ["php", "artisan", "serve", "--host=0.0.0.0", "--port=8000"]
