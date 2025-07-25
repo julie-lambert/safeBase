@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Models\DatabaseConnection;
 use App\Models\Backup;
 use Illuminate\Support\Facades\Storage;
+use Illuminate\Support\Facades\Auth;
 
 class BackupController extends Controller
 {
@@ -15,10 +16,6 @@ class BackupController extends Controller
         $filename = "{$database->dbname}_{$timestamp}.sql";
         $backupPath = storage_path("app/backups/{$filename}");
 
-                // Chemin du fichier
-            $timestamp = now()->format('Ymd_His');
-            $filename = "{$database->dbname}_{$timestamp}.sql";
-            $backupPath = storage_path("app/backups/{$filename}");
 
             // Construire la commande en fonction du type de base
             if ($database->type === 'mysql') {
@@ -52,11 +49,19 @@ class BackupController extends Controller
     }
 
      // ✅ Page liste des sauvegardes
-    public function index()
-    {
-        $backups = Backup::with('database')->latest()->paginate(10);
-        return view('backups.index', compact('backups'));
+public function index()
+{
+    $backups = Backup::with('database')->latest()->paginate(10);
+
+    $user = Auth::user(); // ✅ Toujours fiable
+
+    if ($user && $user->role === 'admin') {
+        return view('backups.index', compact('backups')); // vue admin
     }
+
+    return view('backups.readonly', compact('backups')); // vue lecture seule
+}
+
 
     // ✅ Télécharger un fichier de sauvegarde
 public function download(Backup $backup)
@@ -74,6 +79,7 @@ public function download(Backup $backup)
 
 public function restore(Backup $backup)
 {
+
     $database = $backup->database;
     $backupFile = storage_path('app/' . $backup->file_path);
 

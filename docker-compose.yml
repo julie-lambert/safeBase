@@ -1,0 +1,50 @@
+version: '3.8'
+
+services:
+  mysql:
+    image: mysql:8.0
+    container_name: safebase-mysql
+    restart: always
+    environment:
+      MYSQL_ALLOW_EMPTY_PASSWORD: "yes"   # ✅ autorise root sans mot de passe
+      MYSQL_DATABASE: safebase
+    ports:
+      - "3307:3306"
+    volumes:
+      - db_data:/var/lib/mysql
+
+  app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: safebase-app
+    restart: always
+    depends_on:
+      - mysql
+    ports:
+      - "8010:8000"
+    environment:
+      DB_CONNECTION: mysql
+      DB_HOST: mysql
+      DB_PORT: 3306
+      DB_DATABASE: safebase
+      DB_USERNAME: root
+      DB_PASSWORD: ""    # ✅ vide
+    volumes:
+      - .:/var/www/html
+    command: sh -c "php artisan migrate --force && php artisan serve --host=0.0.0.0 --port=8000"
+
+  phpmyadmin:
+    image: phpmyadmin/phpmyadmin
+    container_name: safebase-phpmyadmin
+    restart: always
+    depends_on:
+      - mysql
+    ports:
+      - "8081:80"
+    environment:
+      PMA_HOST: mysql
+      MYSQL_ALLOW_EMPTY_PASSWORD: "yes"  # ✅ autorise sans mot de passe
+
+volumes:
+  db_data:
