@@ -1,10 +1,12 @@
 # ✅ Étape 1 : Base PHP avec extensions nécessaires
 FROM php:8.2-cli
 
-# ✅ Installer les extensions PHP nécessaires à Laravel
+# ✅ Installer les extensions PHP nécessaires à Laravel + client MySQL
 RUN apt-get update && apt-get install -y \
     unzip git libzip-dev libpng-dev libonig-dev libxml2-dev \
+    default-mysql-client \
     && docker-php-ext-install pdo_mysql zip bcmath
+
 
 # ✅ Installer Composer globalement
 COPY --from=composer:2 /usr/bin/composer /usr/bin/composer
@@ -29,3 +31,4 @@ RUN chmod -R 777 storage bootstrap/cache
 
 # ✅ Commande par défaut : lancer Laravel
 CMD ["php", "artisan", "serve", "--host=0.0.0.0", "--port=8000"]
+

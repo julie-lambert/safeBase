@@ -1,17 +1,21 @@
-version: '3.8'
-
 services:
   mysql:
     image: mysql:8.0
     container_name: safebase-mysql
     restart: always
     environment:
-      MYSQL_ALLOW_EMPTY_PASSWORD: "yes"   # ✅ autorise root sans mot de passe
+      MYSQL_ALLOW_EMPTY_PASSWORD: "yes"
       MYSQL_DATABASE: safebase
     ports:
       - "3307:3306"
     volumes:
       - db_data:/var/lib/mysql
+    healthcheck:
+      test: ["CMD-SHELL", "mysqladmin ping -h localhost -uroot --password= || exit 1"]
+      interval: 5s
+      timeout: 3s
+      retries: 20
+      start_period: 10s
 
   app:
     build:
@@ -20,31 +24,34 @@ services:
     container_name: safebase-app
     restart: always
     depends_on:
-      - mysql
+      mysql:
+        condition: service_healthy
     ports:
       - "8010:8000"
     environment:
+      APP_ENV: production
       DB_CONNECTION: mysql
       DB_HOST: mysql
       DB_PORT: 3306
       DB_DATABASE: safebase
       DB_USERNAME: root
-      DB_PASSWORD: ""    # ✅ vide
+      DB_PASSWORD: ""
     volumes:
       - .:/var/www/html
-    command: sh -c "php artisan migrate --force && php artisan serve --host=0.0.0.0 --port=8000"
+    command: sh -c "php artisan migrate --force --no-interaction && php artisan serve --host=0.0.0.0 --port=8000"
 
   phpmyadmin:
     image: phpmyadmin/phpmyadmin
     container_name: safebase-phpmyadmin
     restart: always
     depends_on:
-      - mysql
+      mysql:
+        condition: service_healthy
     ports:
       - "8081:80"
     environment:
       PMA_HOST: mysql
-      MYSQL_ALLOW_EMPTY_PASSWORD: "yes"  # ✅ autorise sans mot de passe
+      MYSQL_ALLOW_EMPTY_PASSWORD: "yes"
 
 volumes:
   db_data:
